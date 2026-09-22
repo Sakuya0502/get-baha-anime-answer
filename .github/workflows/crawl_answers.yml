@@ -1,4 +1,4 @@
-name: crawl answers
+name: crawl answer
 
 on:
   schedule:
@@ -39,10 +39,10 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          if git status --porcelain | grep -q "answers.json"; then
+          if git status --porcelain | grep -q "answer.json"; then
             echo "檢測到檔案有變更，開始推送"
-            git add answers.json
-            git commit -m "Auto-update answers.json via GitHub Actions"
+            git add answer.json
+            git commit -m "Auto-update answer.json via GitHub Actions"
             git push
           else
             echo "內容無變動，取消推送"
