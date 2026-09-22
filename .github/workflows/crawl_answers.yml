@@ -1,0 +1,49 @@
+name: crawl answers
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 設定python環境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 安裝pip套件
+        run: |
+          pip install -r requirements.txt
+
+      - name: 抓取答案並寫入json
+        run: |
+          python main.py
+      
+      - name: 推送
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if git status --porcelain | grep -q "answers.json"; then
+            echo "檢測到檔案有變更，開始推送"
+            git add answers.json
+            git commit -m "Auto-update answers.json via GitHub Actions"
+            git push
+          else
+            echo "內容無變動，取消推送"
+          fi
