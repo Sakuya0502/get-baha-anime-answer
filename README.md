@@ -10,7 +10,7 @@
 
 3. 開始使用
     * 完成以上步驟後即可開始使用，獲取答案的按鈕位於網頁頂部，點擊後就會顯示今天動漫通的答案
-    ![example_image](image.png)
+    ![example_image](example.png)
 
 ## 其他
 若有發現任何bug或是問題，請開issue
