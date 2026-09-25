@@ -6,8 +6,12 @@ import datetime
 import subprocess
 
 from bs4 import BeautifulSoup
+from zoneinfo import ZoneInfo
 
 OUTPUT_FILE = "answer.json"
+
+def get_Taiwan_Time():
+    return datetime.datetime.now(ZoneInfo("Asia/Taipei"))
 
 def get_csn():
     #FB的資料太難爬，只好借用巴哈上有人上傳的資料
@@ -54,15 +58,16 @@ def get_ans(csn_id):
 #推送到Github
 def git_push(file_path="answer.json", commit_msg=None):
     try:
+        now = get_Taiwan_Time()
         status = subprocess.run(["git", "status", "--porcelain", file_path],
             capture_output=True,
             text=True,
             check=True
         )
         if not status.stdout.strip():
-            print(f"[ {time.strftime('%Y-%m-%d %H:%M:%S')} ] 答案未變更，略過Push")
+            print(f"[ {now.strftime('%Y-%m-%d %H:%M:%S')} ] 答案未變更，略過Push")
             return
-        print(f"[ {time.strftime('%Y-%m-%d %H:%M:%S')} ] 檢測到新答案，準備開始推送")
+        print(f"[ {now.strftime('%Y-%m-%d %H:%M:%S')} ] 檢測到新答案，準備開始推送")
         subprocess.run(["git", "add", file_path], check=True)
         subprocess.run(
             ["git", "commit", "-m", commit_msg or "Auto-update answer.json"],
@@ -70,9 +75,9 @@ def git_push(file_path="answer.json", commit_msg=None):
         )
         subprocess.run(["git", "pull", "--rebase"], check=True)
         subprocess.run(["git", "push"], check=True)
-        print(f"[ {time.strftime('%Y-%m-%d %H:%M:%S')} ] 推送成功")
+        print(f"[ {now.strftime('%Y-%m-%d %H:%M:%S')} ] 推送成功")
     except subprocess.CalledProcessError as e:
-        print(f"[ {time.strftime('%Y-%m-%d %H:%M:%S')} ] 推送失敗，失敗原因:{str(e)}")
+        print(f"[ {now.strftime('%Y-%m-%d %H:%M:%S')} ] 推送失敗，失敗原因:{str(e)}")
 
 #將資料寫入json
 def write_json():
@@ -93,7 +98,7 @@ def write_json():
 
 #時間校正(每5分鐘運行一次)   
 def timer():
-    now = datetime.datetime.now()
+    now = get_Taiwan_Time()
     second_past = (now.minute % 5) * 60 + now.second
     sleep_time = 300 - second_past
     sleep_time += 1
@@ -105,12 +110,13 @@ def timer():
 
 def main_loop():
     TOTAL_RUN_TIME = 55 * 60
+    now = get_Taiwan_Time()
     startime = time.time()
     print("[ 立即開始爬蟲 ]")
     write_json()
     while (time.time() - startime) < TOTAL_RUN_TIME:
         timer()
-        print(f"\n[ {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ] 獲取資料中...")
+        print(f"\n[ {now.strftime('%Y-%m-%d %H:%M:%S')} ] 獲取資料中...")
         write_json()
         time.sleep(2)
     
