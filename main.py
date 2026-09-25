@@ -1,12 +1,16 @@
 import json
 import re
 import requests
+import time
+import datetime
+import subprocess
 
 from bs4 import BeautifulSoup
 
 OUTPUT_FILE = "answer.json"
 
 def get_csn():
+    #FB的資料太難爬，只好借用巴哈上有人上傳的資料
     base_url = "https://api.gamer.com.tw/home/v2/creation_list.php"
     #感謝X洨妹(https://home.gamer.com.tw/profile/index.php?owner=blackxblue)於巴哈提供的資料
     main_url = "https://home.gamer.com.tw/profile/index_creation.php?owner=blackxblue&folder=370818"
@@ -17,7 +21,7 @@ def get_csn():
     params = {"owner": "blackxblue", "folder": 370818}
     res = requests.get(base_url, headers=headers, params=params)
     if res.status_code != 200:
-        return f"資料獲取失敗，{res.status_code}"
+        return None
     else:
         data = res.json()
         csn = data["data"]["list"][0]["csn"]
@@ -31,7 +35,7 @@ def get_ans(csn_id):
     res = requests.get(base_url, headers=headers)
     res.encoding = "utf-8"
     if res.status_code != 200:
-        return f"資料獲取失敗，{res.status_code}"
+        return None
     else:
         soup = BeautifulSoup(res.text, "html.parser")
         for tag in soup(["script", "style"]):
@@ -45,11 +49,39 @@ def get_ans(csn_id):
             ans_text = options.get(ans_num, "答案獲取失敗")
             return ans_num, ans_text
         else:
-            return "答案獲取失敗"
+            return None
 
-def main():
+#推送到Github
+def git_push(file_path="answer.json", commit_msg=None):
+    try:
+        status = subprocess.run(["git", "status", "--porcelain", file_path],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        if not status.stdout.strip():
+            print(f"[ {time.strftime('%Y-%m-%d %H:%M:%S')} ] 答案未變更，略過Push")
+            return
+        print(f"[ {time.strftime('%Y-%m-%d %H:%M:%S')} ] 檢測到新答案，準備開始推送")
+        subprocess.run(["git", "add", file_path], check=True)
+        subprocess.run(
+            ["git", "commit", "-m", commit_msg or "Auto-update answer.json"],
+            check=True,
+        )
+        subprocess.run(["git", "pull", "--rebase"], check=True)
+        subprocess.run(["git", "push"], check=True)
+        print(f"[ {time.strftime('%Y-%m-%d %H:%M:%S')} ] 推送成功")
+    except subprocess.CalledProcessError as e:
+        print(f"[ {time.strftime('%Y-%m-%d %H:%M:%S')} ] 推送失敗，失敗原因:{str(e)}")
+
+#將資料寫入json
+def write_json():
     csn = get_csn()
+    if not csn:
+        print("資料獲取失敗")
     ans = get_ans(csn)
+    if not ans:
+        print("資料獲取失敗")
     data = {
         "answer": {
             str(ans[0]): str(ans[1])
@@ -57,7 +89,32 @@ def main():
     }
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
-        print("寫入成功")
+    git_push(commit_msg=f"[ {time.strftime('%Y-%m-%d %H:%M:%S')} ] 答案已更新")
+
+#時間校正(每5分鐘運行一次)   
+def timer():
+    now = datetime.datetime.now()
+    next_min = (now.minute // 5 + 1) * 5
+    if next_min <= 60:
+        target_time = now.replace(minute=0, second=1, microsecond=0 + datetime.timedelta(hours=1))
+    else:
+        target_time = now.replace(minute=next_min, second=1, microsecond=0)
+    sleep_time = (target_time - datetime.datetime.now()).total_seconds()
+    if sleep_time > 0:
+        time_string = target_time.strftime("%Y-%m-%d %H:%M:%S")
+        print(f"距離下個準點 ({str(time_string)}) 還剩下 ({int(sleep_time)}) 秒，等待loop開始...")
+        time.sleep(sleep_time)
+
+def main_loop():
+    TOTAL_RUN_TIME = 55 * 60
+    startime = time.time()
+    print("[ 爬蟲開始 ]")
+    while (time.time() - startime) < TOTAL_RUN_TIME:
+        timer()
+        print(f"\n[ {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ] 獲取資料中...")
+        write_json()
+        time.sleep(2)
+    
 
 if __name__ in "__main__":
-    main()
+    main_loop()
