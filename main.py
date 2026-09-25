@@ -94,12 +94,10 @@ def write_json():
 #時間校正(每5分鐘運行一次)   
 def timer():
     now = datetime.datetime.now()
-    next_min = (now.minute // 5 + 1) * 5
-    if next_min <= 60:
-        target_time = now.replace(minute=0, second=1, microsecond=0) + datetime.timedelta(hours=1)
-    else:
-        target_time = now.replace(minute=next_min, second=1, microsecond=0)
-    sleep_time = (target_time - datetime.datetime.now()).total_seconds()
+    second_past = (now.minute % 5) * 60 + now.second
+    sleep_time = 300 - second_past
+    sleep_time += 1
+    target_time = now + datetime.timedelta(seconds=sleep_time)
     if sleep_time > 0:
         time_string = target_time.strftime("%Y-%m-%d %H:%M:%S")
         print(f"距離下個準點 ({str(time_string)}) 還剩下 ({int(sleep_time)}) 秒，等待loop開始...")
@@ -108,7 +106,8 @@ def timer():
 def main_loop():
     TOTAL_RUN_TIME = 55 * 60
     startime = time.time()
-    print("[ 爬蟲開始 ]")
+    print("[ 立即開始爬蟲 ]")
+    write_json()
     while (time.time() - startime) < TOTAL_RUN_TIME:
         timer()
         print(f"\n[ {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ] 獲取資料中...")
