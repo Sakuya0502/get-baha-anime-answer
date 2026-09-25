@@ -2,8 +2,12 @@ name: crawl answer
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
+
+concurrency:
+  group: crawl-group
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -25,20 +29,9 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: 抓取答案並寫入json
-        run: |
-          python main.py
-      
-      - name: 推送
+      - name: 執行爬蟲
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          if git status --porcelain | grep -q "answer.json"; then
-            echo "檢測到檔案有變更，開始推送"
-            git add answer.json
-            git commit -m "Auto-update answer.json via GitHub Actions"
-            git push
-          else
-            echo "內容無變動，取消推送"
-          fi
+          python main.py
