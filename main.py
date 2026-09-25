@@ -96,7 +96,7 @@ def timer():
     now = datetime.datetime.now()
     next_min = (now.minute // 5 + 1) * 5
     if next_min <= 60:
-        target_time = now.replace(minute=0, second=1, microsecond=0 + datetime.timedelta(hours=1))
+        target_time = now.replace(minute=0, second=1, microsecond=0) + datetime.timedelta(hours=1)
     else:
         target_time = now.replace(minute=next_min, second=1, microsecond=0)
     sleep_time = (target_time - datetime.datetime.now()).total_seconds()
