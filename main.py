@@ -81,6 +81,7 @@ def git_push(file_path="answer.json", commit_msg=None):
 
 #將資料寫入json
 def write_json():
+    now = get_Taiwan_Time()
     csn = get_csn()
     if not csn:
         print("資料獲取失敗")
@@ -94,7 +95,7 @@ def write_json():
     }
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
-    git_push(commit_msg=f"[ {time.strftime('%Y-%m-%d %H:%M:%S')} ] 答案已更新")
+    git_push(commit_msg=f"[ {now.strftime('%Y-%m-%d %H:%M:%S')} ] 答案已更新")
 
 #時間校正(每5分鐘運行一次)   
 def timer():
